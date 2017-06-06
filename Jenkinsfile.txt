@@ -1,0 +1,65 @@
+ 
+	
+    node {
+   def mvnHome
+   stage('SourceCheckout') { // for display purposes
+      // Get some code from a GitHub repository
+      git 'https://github.com/Sampath7718/JenkisnFile.git'
+      // Get the Maven tool.
+      // ** NOTE: This 'M3' Maven tool must be configured
+      // **       in the global configuration.           
+      mvnHome = tool 'M3'
+   }
+   stage('Build') {
+      // Run the maven build
+      if (isUnix()) {
+          sh "'pwd'"
+         sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean compile"
+         
+      } else {
+         bat(/"${mvnHome}\bin\mvn" -Dmaven.test.failure.ignore clean package/)
+      }
+   }
+ 
+    parallel first:{
+    stage('UnitTest') {
+      // Run the maven build
+      if (isUnix()) {
+          sh "'pwd'"
+         sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore test"
+         
+      } else {
+         bat(/"${mvnHome}\bin\mvn" -Dmaven.test.failure.ignore clean test/)
+      }
+   }
+    }
+    second :{
+   stage('IntegartionTest') {
+      // Run the maven buildt
+      if (isUnix()) {
+          sh "'pwd'"
+         sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore verify "
+         
+      } else {
+         bat(/"${mvnHome}\bin\mvn" -Dmaven.test.failure.ignore clean verify/)
+      }
+   }
+    }
+    third :{
+   stage('PerformanceTest') {
+      // Run the maven buildt
+      if (isUnix()) {
+          sh "'pwd'"
+         sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore test -Dtest=PerformanceTest "
+         
+      } else {
+         bat(/"${mvnHome}\bin\mvn" -Dmaven.test.failure.ignore clean verify/)
+      }
+   }
+    }    
+   
+   stage('deploy') {
+      junit '**/target/surefire-reports/TEST-*.xml'
+      archive 'target/*.jar'
+   }
+}
